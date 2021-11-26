@@ -77,7 +77,35 @@ impl ScratchPad {
         }
     }
 
-    // pub fn load<W: Addressable>(&self, offset: u32) -> T {}
+    // Read a value from the scratchpad with the given width
+    pub fn load<W: Addressable>(&self, offset: u32) -> W {
+        let offset = (offset & 0x7fffff) as usize;
+        let mut val = 0u32;
+        for i in 0..W::width() as usize {
+            val |= (self.dat[offset + i] as u32) << (i * 8);
+        }
+        W::from_u32(val)
+    }
 
-    // pub fn store<W: Addressable>(&mut self, offset: u32, val: T) {}
+    // Write a value to the scratchpad with the given width
+    pub fn store<W: Addressable>(&mut self, offset: u32, val: W) {
+        let offset = (offset & 0x7fffff) as usize;
+        let val = val.as_u32();
+        for i in 0..W::width() as usize {
+            self.dat[offset + i] = (val >> (i * 8)) as u8;
+        }
+    }
+}
+
+pub mod map {
+    const REGION_MASKS: [u32; 8] = [
+        0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, // KUSEG: 2048MB
+        0x7FFFFFFF, // KSEG0: 512MB
+        0x1FFFFFFF, // KSEG1: 512MB
+        0xFFFFFFFF, 0xFFFFFFFF, // KSEG1: 1024MB
+    ];
+
+    pub fn mask(addr: u32) -> u32 {
+        addr & REGION_MASKS[(addr >> 29) as usize]
+    }
 }
