@@ -56,6 +56,110 @@ impl fmt::Display for Cpu {
     }
 }
 
+// Add unsigned word
+fn addu(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let t = cpu.regs[i.rt()];
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), s.wrapping_add(t));
+}
+
+// Subtract unsigned word
+fn subu(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let t = cpu.regs[i.rt()];
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), s.wrapping_sub(t));
+}
+
+// Add immediate unsigned word
+fn addiu(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let imm = i.simm();
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), s.wrapping_add(imm));
+}
+
+// Set on less than
+fn slt(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()] as i32;
+    let t = cpu.regs[i.rt()] as i32;
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), (s < t) as u32)
+}
+
+// Set on less than unsigned
+fn sltu(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let t = cpu.regs[i.rt()];
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), (s < t) as u32);
+}
+
+// Set on less than immediate
+fn slti(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()] as i32;
+    let imm = i.simm() as i32;
+    cpu.delayed_load();
+    cpu.set_reg(i.rt(), (s < imm) as u32);
+}
+
+// Set on less than immediate unsigned
+fn sltiu(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let imm = i.simm();
+    cpu.delayed_load();
+    cpu.set_reg(i.rt(), (s < imm) as u32);
+}
+
+// Bitwise logical AND
+fn and(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let t = cpu.regs[i.rt()];
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), s & t);
+}
+
+// Bitwise logical OR
+fn or(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let t = cpu.regs[i.rt()];
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), s | t);
+}
+
+// Bitwise logical exclusive OR
+fn xor(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let t = cpu.regs[i.rt()];
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), s ^ t);
+}
+
+// Bitwise logical NOT OR
+fn nor(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let t = cpu.regs[i.rt()];
+    cpu.delayed_load();
+    cpu.set_reg(i.rd(), !(s | t));
+}
+
+// Bitwise logical OR with a constant
+fn ori(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let imm = i.imm();
+    cpu.delayed_load();
+    cpu.set_reg(i.rt(), s | imm);
+}
+
+// Bitwise logical exclusive OR with a constant
+fn xori(cpu: &mut Cpu, i: Instruction) {
+    let s = cpu.regs[i.rs()];
+    let imm = i.imm();
+    cpu.delayed_load();
+    cpu.set_reg(i.rt(), s ^ imm);
+}
+
 #[derive(Copy, Clone)]
 pub struct Instruction(u32);
 
@@ -82,6 +186,11 @@ impl Instruction {
     // Source register
     pub const fn rt(self) -> usize {
         ((self.0 >> 16) & 0x1f) as usize
+    }
+
+    // Source register
+    pub const fn rd(self) -> usize {
+        ((self.0 >> 11) & 0x1f) as usize
     }
 
     // Shift immediate values
