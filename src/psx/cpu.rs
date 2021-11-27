@@ -1,3 +1,5 @@
+use super::Psx;
+
 use std::fmt;
 
 // Initial value for the pc
@@ -56,108 +58,11 @@ impl fmt::Display for Cpu {
     }
 }
 
-// Add unsigned word
-fn addu(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let t = cpu.regs[i.rt()];
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), s.wrapping_add(t));
-}
+pub fn step(psx: &mut Psx) {}
 
-// Subtract unsigned word
-fn subu(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let t = cpu.regs[i.rt()];
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), s.wrapping_sub(t));
-}
-
-// Add immediate unsigned word
-fn addiu(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let imm = i.simm();
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), s.wrapping_add(imm));
-}
-
-// Set on less than
-fn slt(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()] as i32;
-    let t = cpu.regs[i.rt()] as i32;
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), (s < t) as u32)
-}
-
-// Set on less than unsigned
-fn sltu(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let t = cpu.regs[i.rt()];
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), (s < t) as u32);
-}
-
-// Set on less than immediate
-fn slti(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()] as i32;
-    let imm = i.simm() as i32;
-    cpu.delayed_load();
-    cpu.set_reg(i.rt(), (s < imm) as u32);
-}
-
-// Set on less than immediate unsigned
-fn sltiu(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let imm = i.simm();
-    cpu.delayed_load();
-    cpu.set_reg(i.rt(), (s < imm) as u32);
-}
-
-// Bitwise logical AND
-fn and(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let t = cpu.regs[i.rt()];
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), s & t);
-}
-
-// Bitwise logical OR
-fn or(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let t = cpu.regs[i.rt()];
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), s | t);
-}
-
-// Bitwise logical exclusive OR
-fn xor(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let t = cpu.regs[i.rt()];
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), s ^ t);
-}
-
-// Bitwise logical NOT OR
-fn nor(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let t = cpu.regs[i.rt()];
-    cpu.delayed_load();
-    cpu.set_reg(i.rd(), !(s | t));
-}
-
-// Bitwise logical OR with a constant
-fn ori(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let imm = i.imm();
-    cpu.delayed_load();
-    cpu.set_reg(i.rt(), s | imm);
-}
-
-// Bitwise logical exclusive OR with a constant
-fn xori(cpu: &mut Cpu, i: Instruction) {
-    let s = cpu.regs[i.rs()];
-    let imm = i.imm();
-    cpu.delayed_load();
-    cpu.set_reg(i.rt(), s ^ imm);
+// TODO: Fetch an instruction from memory
+fn fetch_instruction(psx: &mut Psx) -> Instruction {
+    Instruction::new(0)
 }
 
 #[derive(Copy, Clone)]
@@ -168,47 +73,38 @@ impl Instruction {
         Self(i)
     }
 
-    // Primary opcode field
-    pub const fn op(self) -> usize {
-        ((self.0 >> 26) & 0x3f) as usize
+    pub const fn op(self) -> u32 {
+        (self.0 >> 26) & 0x3f
     }
 
-    // Secondary opcode field
-    pub const fn op2(self) -> usize {
-        (self.0 & 0x1f) as usize
+    pub const fn funct(self) -> u32 {
+        self.0 & 0x1f
     }
 
-    // Source register or base
     pub const fn rs(self) -> usize {
         ((self.0 >> 21) & 0x1f) as usize
     }
 
-    // Source register
     pub const fn rt(self) -> usize {
         ((self.0 >> 16) & 0x1f) as usize
     }
 
-    // Source register
     pub const fn rd(self) -> usize {
         ((self.0 >> 11) & 0x1f) as usize
     }
 
-    // Shift immediate values
-    pub const fn sa(self) -> u32 {
+    pub const fn shmat(self) -> u32 {
         (self.0 >> 6) & 0x1f
     }
 
-    // 16-bit signed immediate value
     pub const fn simm(self) -> u32 {
         ((self.0 & 0xffff) as i16) as u32
     }
 
-    // 16-bit zero-extended to the left
     pub const fn imm(self) -> u32 {
         self.0 & 0xfff
     }
 
-    // Immediate value for jump instructions
     pub const fn jimm(self) -> u32 {
         (self.0 & 0x03ffffff) << 2
     }
