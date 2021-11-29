@@ -8,9 +8,11 @@ const RESET_PC: u32 = 0xbfc00000;
 pub struct Cpu {
     // General purpose registers
     pub regs: [u32; 32],
+    // Current program counter
+    pub current_pc: u32,
     // Program counter
     pub pc: u32,
-    // Next pc for the branch delay slot
+    // Next program counter for the branch delay slot
     pub next_pc: u32,
     // Load delay slot
     pub delayed_load: Option<(usize, u32)>,
@@ -18,17 +20,21 @@ pub struct Cpu {
     pub hi: u32,
     // LO multiply/divide result
     pub lo: u32,
+    // Instruction cache
+    icache: [ICacheLine; 256],
 }
 
 impl Cpu {
     pub fn new() -> Self {
         Self {
             regs: [0u32; 32],
+            current_pc: RESET_PC,
             pc: RESET_PC,
             next_pc: RESET_PC.wrapping_add(4),
             delayed_load: None,
             hi: 0,
             lo: 0,
+            icache: [ICacheLine::new(); 256],
         }
     }
 
@@ -62,7 +68,51 @@ pub fn step(psx: &mut Psx) {}
 
 // TODO: Fetch an instruction from memory
 fn fetch_instruction(psx: &mut Psx) -> Instruction {
+    let pc = psx.cpu.current_pc;
+    let cached = pc < 0xa0000000;
+
+    if cached && psx.code_cache_enabled() {
+        let line = ((pc >> 4) & 0xff) as usize;
+        let mut cache_line = psx.cpu.icache[line];
+
+        let tag = pc & 0x7ffff000;
+        let index = (pc >> 2) & 3;
+
+        if cache_line.tag() != tag || !cache_line.is_valid(index) {
+            // MISS!
+        }
+    } else {
+        // MiSS!
+    }
     Instruction::new(0)
+}
+
+// Instruction cache line
+#[derive(Clone, Copy)]
+struct ICacheLine {
+    // Tag and valid bits
+    pub info: u32,
+    // Cached instructions
+    pub line: [Instruction; 4],
+}
+
+impl ICacheLine {
+    pub fn new() -> Self {
+        Self {
+            info: 0,
+            line: [Instruction::new(0); 4],
+        }
+    }
+
+    // Get the tag bits
+    pub fn tag(&self) -> u32 {
+        self.info & 0xfffff000
+    }
+
+    // Is the valid bit set?
+    pub fn is_valid(&self, index: u32) -> bool {
+        true
+    }
 }
 
 #[derive(Copy, Clone)]
