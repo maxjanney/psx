@@ -39,7 +39,7 @@ impl ScratchPad {
     pub fn load<W: Addressable>(&self, offset: u32) -> W {
         let offset = (offset & 0x7fffff) as usize;
         let mut val = 0u32;
-        for i in 0..W::width() as usize {
+        for i in 0..W::WIDTH as usize {
             val |= (self.dat[offset + i] as u32) << (i * 8);
         }
         W::from_u32(val)
@@ -49,7 +49,7 @@ impl ScratchPad {
     pub fn store<W: Addressable>(&mut self, offset: u32, val: W) {
         let offset = (offset & 0x7fffff) as usize;
         let val = val.as_u32();
-        for i in 0..W::width() as usize {
+        for i in 0..W::WIDTH as usize {
             self.dat[offset + i] = (val >> (i * 8)) as u8;
         }
     }
@@ -64,7 +64,7 @@ pub enum BusWidth {
 
 // Trait for generic load/stores
 pub trait Addressable {
-    fn width() -> BusWidth;
+    const WIDTH: BusWidth;
 
     fn from_u32(val: u32) -> Self;
 
@@ -72,9 +72,7 @@ pub trait Addressable {
 }
 
 impl Addressable for u8 {
-    fn width() -> BusWidth {
-        BusWidth::Byte
-    }
+    const WIDTH: BusWidth = BusWidth::Byte;
 
     fn from_u32(val: u32) -> Self {
         val as u8
@@ -86,9 +84,7 @@ impl Addressable for u8 {
 }
 
 impl Addressable for u16 {
-    fn width() -> BusWidth {
-        BusWidth::Word
-    }
+    const WIDTH: BusWidth = BusWidth::Word;
 
     fn from_u32(val: u32) -> Self {
         val as u16
@@ -100,9 +96,7 @@ impl Addressable for u16 {
 }
 
 impl Addressable for u32 {
-    fn width() -> BusWidth {
-        BusWidth::DoubleWord
-    }
+    const WIDTH: BusWidth = BusWidth::DoubleWord;
 
     fn from_u32(val: u32) -> Self {
         val
